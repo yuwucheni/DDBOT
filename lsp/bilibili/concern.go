@@ -307,21 +307,21 @@ func (c *Concern) watchCore() {
 				return err
 			}
 			var liveInfoMap = make(map[int64]*LiveInfo)
+			var idMaps = make(map[int64]interface{})
 			for _, info := range liveInfo {
 				liveInfoMap[info.Mid] = info
 			}
 
-			_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			_, ids, _, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 				return p.ContainAny(concern.BibiliLive)
 			})
 			if err != nil {
 				logger.Errorf("List error %v", err)
 				return err
 			}
-			ids, types, err = c.GroupTypeById(ids, types)
-			if err != nil {
-				logger.Errorf("GroupTypeById error %v", err)
-				return err
+
+			for _, id := range ids {
+				idMaps[id.(int64)] = struct{}{}
 			}
 
 			sendLiveInfo := func(info *LiveInfo) {
@@ -335,8 +335,7 @@ func (c *Concern) watchCore() {
 				}
 			}
 
-			for _, id := range ids {
-				mid := id.(int64)
+			for mid := range idMaps {
 				oldInfo, _ := c.GetLiveInfo(mid)
 				if oldInfo == nil {
 					// first live info
